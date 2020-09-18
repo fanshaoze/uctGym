@@ -1,0 +1,9 @@
+threadNum=8
+PositionNum=8
+numGame=10
+depstart=4
+depend=5
+depStepLen=1
+trajstart=1000
+trajend=1001
+trajStepLen=1

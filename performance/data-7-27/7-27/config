@@ -1,0 +1,6 @@
+threadNum=8
+PositionNum=8
+numGame=1000
+deplist = [4,5,7,10,14,19,25]
+trajlist = [500,1000,5000,10000,20000]
+uct = uct.v1
