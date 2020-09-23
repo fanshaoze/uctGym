@@ -7,14 +7,15 @@ from Env.AtariEnv.AtariEnvWrapper import make_atari_env
 
 # To allow easily extending to other tasks, we built a wrapper on top of the 'real' environment.
 class EnvWrapper():
-    def __init__(self, env_name, max_episode_length=0, enable_record=False, record_path="1.mp4"):
+    def __init__(self, env_name, max_episode_length=0, enable_record=True, record_path="1.mp4"):
         self.env_name = env_name
 
         self.env_type = None
 
         try:
-            self.env, self.recorder = make_atari_env(env_name, 0, 0, enable_record = False,record_path = record_path)
+            self.env, self.recorder = make_atari_env(env_name, 0, 0, enable_record = True,record_path = record_path)
             # Call reset to avoid gym bugs.
+            #self.env = gym.make(self.env_name)
             self.env.reset()
 
             self.env_type = "Atari"
@@ -74,6 +75,9 @@ class EnvWrapper():
 
     def render(self):
         self.env.render()
+
+    def save_image(self, image_dir):
+        self.env.ale.saveScreenPNG(image_dir)
 
     def capture_frame(self):
         self.recorder.capture_frame()

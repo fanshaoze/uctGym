@@ -1,2 +1,0 @@
-maxdepth,num_Runs,avgstep
-100,100,130.0

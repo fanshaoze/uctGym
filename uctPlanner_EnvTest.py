@@ -7,6 +7,7 @@ from GymWrapper import EnvWrapper
 import datetime
 import uct_EnvTest
 import numpy as np
+from util import mkdir
 import time
 
 
@@ -20,11 +21,7 @@ class ToyState(State):
 	def equal(self, _state):
 		# TODO __dict__ may not be effective
 		if isinstance(_state, ToyState):
-			# TODO clone_full_state(),check type->compare function, with done
-			if type(self.state_[0]) == type(_state.state_[0]):
-				return np.array_equal(self.state_[0], _state.state_[0])
-			else:
-				print("not two ndarray comparing")
+			return np.array_equal(self.state_[0], _state.state_[0])
 		else:
 			print("wrong state type")
 			return False
@@ -61,7 +58,6 @@ class ToySimulator(Simulator):
 
 	# TODO when init this, we need to start with wrapper
 	def __init__(self, _env_params):
-		# init the simulator,start from(0,2)
 		self.reward = 0
 		self.actVect = []
 		self.env_params_ = _env_params
@@ -80,9 +76,8 @@ class ToySimulator(Simulator):
 	def setState(self, _state):  # Done
 		if isinstance(_state, ToyState):
 			self.wrapped_env.restore_with_state(_state.state_)
-			self.current.state_ = _state.state_
+			self.current.state_ = self.wrapped_env.get_cloned_state()
 			self.current.done_ = _state.done_
-			#self.wrapped_env.render()
 		else:
 			print("wrong state type")
 			return
@@ -100,7 +95,7 @@ class ToySimulator(Simulator):
 		#self.wrapped_env.render()
 		self.current.state_ = self.wrapped_env.get_cloned_state()
 		self.current.done_ = done
-		self.reward = reward
+		#self.reward = reward
 		return reward
 
 	# get all the actions taked
@@ -124,7 +119,8 @@ _env_params = {
 	"env_name": env_name,
 	"max_episode_length": max_episode_length
 }
-
+dt = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+mkdir(dt)
 depthList = [100]
 trajectory = [100]
 numGames = 1
@@ -133,13 +129,36 @@ starttime = datetime.datetime.now()
 fo = open(outFilename, "w")
 fo.write("maxdepth,num_Runs,avgstep\n")
 sim = ToySimulator(_env_params)
+
 sim2 = ToySimulator(_env_params)
 avgsteps = 0
 avgstep_list = []
 initNums = 1
 initsize = 0
 ransize = 0
-initstate = sim.getState()
+initstate = copy.deepcopy(sim.getState())
+
+sim.setState(initstate)
+state_init = sim.wrapped_env.get_cloned_state()
+actions = []
+for i in range(5):
+	actions.append(sim.wrapped_env.env.action_space.sample())
+for i in range(5):
+	sim.act(ToyAction(actions[i]))
+state0 = sim.wrapped_env.get_cloned_state()
+print(type(state0[0]),type(sim.current.state_[0]))
+print("sim state is equal to cloned state? ",np.array_equal(state0[0],sim.current.state_[0]))
+sim.setState(initstate)
+state_next_init = sim.wrapped_env.get_cloned_state()
+print(type(state_init[0]),type(state_next_init[0]))
+print("reset state successfully? ", np.array_equal(state_init[0], state_next_init[0]))
+for i in range(5):
+	sim.act(ToyAction(actions[i]))
+state1 = sim.wrapped_env.get_cloned_state()
+print(type(state0[0]))
+print("second act state equal? ", np.array_equal(state0[0], state1[0]))
+sys.exit()
+
 avg_cumulate_reward = 0
 # (self, _sim, _maxDepth, _numRuns, _ucbScalar, _gamma, _leafValue, _endEpisodeValue):
 for max_depth in depthList:
@@ -160,33 +179,39 @@ for max_depth in depthList:
 					uctTree.setRootNode(sim.getState(), sim.getActions(), r, sim.isTerminal())
 					origin_state = sim.wrapped_env.get_cloned_state()
 					origin_done = sim.isTerminal()
-					# print()
+					'''test equal
+					print(uctTree.root_.state_.equal(ToyState(origin_state,origin_done)))
 					sim.wrapped_env.render()
+					'''
 					tree_size = uctTree.plan()
 					# print()
 					action = uctTree.getAction()
+
+					#reset the sim state as the root
 					sim.setState(ToyState(origin_state,origin_done))
-					# clonestate = sim.wrapped_env.get_cloned_state()
-					# print("cloned state equal? ", np.array_equal(simstate.state_[0],clonestate[0]),
-					# 	  simstate.done_, sim.current.done_)
+
 					print("-action:", end='')
 					action.print()
 					# print("->", end='')
 					print("")
 					# uctTree.testTreeStructure()
-					# 先序遍历，测试所有节点
 					# uctTree.testDeterministicProperty()
+
 					r = sim.act(action)
+
+					image_dir = dt+"/"+str(steps)+".png"
+					sim.wrapped_env.env.ale.saveScreenPNG(image_dir)
+
 					sim.wrapped_env.render()
-					# print(sim.isTerminal())
 					avg_cumulate_reward += r
-					# simstate = sim.wrapped_env.get_cloned_state()
-					# print("after the act, statesame as before? ", np.array_equal(simstate[0], uctTree.root_.state_.state_[0]))
+					''' Test 
+					simstate = sim.wrapped_env.get_cloned_state()
+					print("after the act, state different with before? ", np.array_equal(simstate[0], uctTree.root_.state_.state_[0]))
+					'''
 					# sim.getState().print()
 					print(" reward:", uctTree.root_.reward_, end='')
 					print("")
 					# sim.getState().print()
-				sim.reset()
 				print("#####################Game:", i, "  steps: ", steps, "  average cumulate reward: ",
 					  avg_cumulate_reward)
 				avgsteps += steps
@@ -200,3 +225,4 @@ print("execute time: ", (endtime - starttime).seconds)
 # avgtimes+=(endtime - starttime).seconds
 fo.close()
 # print("avgtimes:",avgtimes/20)
+
