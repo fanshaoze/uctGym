@@ -156,6 +156,7 @@ class UCTPlanner(object):
         if self.root_ != None:
             self.clearTree()
         self.root_ = StateNode(None, _state, _actVect, _reward, _isTerminal)
+        self.sim_.setState(self.root_.state_)
 
     def clearTree(self):
         self.root_ = None
@@ -164,6 +165,7 @@ class UCTPlanner(object):
     def plan(self):
         # timesofterminal = 0
         # nodeList = [] #for viz
+        tree_size = 0
         assert (self.root_ != None)
         # root offset is ????
         rootOffset = self.root_.numVisits_
@@ -185,9 +187,6 @@ class UCTPlanner(object):
                     # print("terminal nodeList:",len(nodeList)) # for viz
                     # timesofterminal+=1 # for viz
                     break
-                # if is full,means we have already tried every action,
-                # we need to find the 'best' child
-
                 if current.isFull():
                     uctBranch = 0
                     if current == self.root_:
@@ -200,16 +199,13 @@ class UCTPlanner(object):
                     else:
                         self.sim_.setState(current.state_)
                         # after select the highest UCB action we need to act it, and find the state we need
-                        # TODO dict
+                        # TODO add new equal
                         r = self.sim_.act(current.actVect_[uctBranch])
-
                         nextState = self.sim_.getState()
                         if current.nodeVect_[uctBranch].containNextState(nextState):
-                            # follow path
                             current = current.nodeVect_[uctBranch].getNextStateNode(nextState)
                             continue
                         else:
-                            # TODO dict
                             nextNode = current.nodeVect_[uctBranch].addStateNode(nextState, self.sim_.getActions(), r,
                                                                                  self.sim_.isTerminal())
                             if -1 == self.maxDepth_:
@@ -220,10 +216,24 @@ class UCTPlanner(object):
                             # nodeList.append(current)#for viz
                             break
                 else:
+                    tree_size += 1
                     # ptr used to store the the current length
                     actID = current.addActionNode()
                     self.sim_.setState(current.state_)
+                    # simstate = self.sim_.wrapped_env.get_cloned_state()
+                    # print(type(simstate[0]))
+                    # print(type(current.state_.state_[0]))
+                    # print(np.array_equal(simstate[0], current.state_.state_[0]))
                     r = self.sim_.act(current.actVect_[actID])
+                    # simstate = self.sim_.wrapped_env.get_cloned_state()
+                    # print(type(simstate[0]))
+                    # print(type(current.state_.state_[0]))
+                    # print(np.array_equal(simstate[0], current.state_.state_[0]))
+                    # self.sim_.setState(current.state_)
+                    # simstate = self.sim_.wrapped_env.get_cloned_state()
+                    # print(type(simstate[0]))
+                    # print(type(current.state_.state_[0]))
+                    # print(np.array_equal(simstate[0], current.state_.state_[0]))
                     nextNode = current.nodeVect_[actID].addStateNode(self.sim_.getState(), self.sim_.getActions(), r,
                                                                      self.sim_.isTerminal())
                     if -1 == self.maxDepth_:
@@ -238,6 +248,9 @@ class UCTPlanner(object):
 
     # print("times of terminal:",timesofterminal) #for viz
     # return nodeList #for viz
+        print("tree_size", tree_size)
+        return tree_size
+
 
     def getAction(self):
         return self.root_.actVect_[self.getGreedyBranchIndex()]

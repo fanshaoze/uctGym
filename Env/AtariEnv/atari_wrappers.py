@@ -236,7 +236,6 @@ class FrameStack(gym.Wrapper):
     def clone_full_state(self):
         state_data = self.unwrapped.clone_full_state()
         frame_data = self.frames.copy()
-
         full_state_data = (state_data, frame_data)
 
         return full_state_data

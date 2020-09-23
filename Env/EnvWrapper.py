@@ -59,6 +59,7 @@ class EnvWrapper():
 
 	def restore(self, checkpoint):
 		if self.since_last_reset > 20000:
+			"last reset"
 			self.reset()
 			self.since_last_reset = 0
 

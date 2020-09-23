@@ -13,7 +13,7 @@ import time
 class ToyState(State):
 	def __init__(self, _state, _done=False):
 		# TODO add done attribute
-		self.state_ = _state
+		self.state_ = copy.deepcopy(_state)
 		self.done_ = _done
 		#print(type(self.state_))
 
@@ -21,7 +21,10 @@ class ToyState(State):
 		# TODO __dict__ may not be effective
 		if isinstance(_state, ToyState):
 			# TODO clone_full_state(),check type->compare function, with done
-			return np.array_equal(self.state_[0], _state.state_[0])
+			if type(self.state_[0]) == type(_state.state_[0]):
+				return np.array_equal(self.state_[0], _state.state_[0])
+			else:
+				print("not two ndarray comparing")
 		else:
 			print("wrong state type")
 			return False
@@ -70,14 +73,16 @@ class ToySimulator(Simulator):
 		self.current = ToyState(self.wrapped_env.get_cloned_state(), False)
 
 	def __del__(self):
-		self.actVect.clear()
-		del self.current
+		# self.actVect.clear()
+		# del self.current
 		pass
 
 	def setState(self, _state):  # Done
 		if isinstance(_state, ToyState):
-			self.current = copy.deepcopy(_state)
 			self.wrapped_env.restore_with_state(_state.state_)
+			self.current.state_ = _state.state_
+			self.current.done_ = _state.done_
+			#self.wrapped_env.render()
 		else:
 			print("wrong state type")
 			return
@@ -92,6 +97,7 @@ class ToySimulator(Simulator):
 			return 0
 		_action = action.action_
 		next_state, reward, done = self.wrapped_env.step(_action)
+		#self.wrapped_env.render()
 		self.current.state_ = self.wrapped_env.get_cloned_state()
 		self.current.done_ = done
 		self.reward = reward
@@ -108,60 +114,19 @@ class ToySimulator(Simulator):
 	# the place of the food is random
 	def reset(self):  # Done
 		init_state = self.wrapped_env.reset()
-		self.current = ToyState(self.wrapped_env.get_cloned_state(), False)
+		self.current.state_ = self.wrapped_env.get_cloned_state()
+		self.current.done_ = False
 
 
-# env_name = "AlienNoFrameskip-v0"
-# max_episode_length = 10
-# _env_params = {
-#         "env_name": env_name,
-#         "max_episode_length": max_episode_length
-#     }
-
-# wrapped_env = EnvWrapper(**_env_params)
-# state = wrapped_env.env.reset()
-# print(wrapped_env.env.action_space)
-# print(type(state))
-# pre_state = None
-# action = wrapped_env.env.action_space.sample()
-# next_state, reward, done = wrapped_env.step(action)
-#
-# pre_state = copy.deepcopy(next_state)
-# #action = wrapped_env.env.action_space.sample()
-# for i in range(1):
-# 	action = wrapped_env.env.action_space.sample()
-# 	next_state, reward, done = wrapped_env.step(action)
-# 	print((next_state._frames==pre_state._frames).all())
-# 	pre_state = copy.deepcopy(next_state)
-# print(state)
-# print(action_n)
-# toy_state = ToyState(state)
-# sim = ToySimulator(_env_params)
-# toy_state = sim.getState()
-# print(toy_state.state_)
-# action = wrapped_env.env.action_space.sample()
-# sim.act(ToyAction(action))
-# print(sim.getState().state_,sim.done,sim.reward)
-# action = wrapped_env.env.action_space.sample()
-# next_state, reward, done = wrapped_env.step(action)
-# sim.setState(ToyState(next_state), done)
-# sim.getActions()
-
-
-env_name = "Breakout-v4"
-max_episode_length = 100000
+env_name = "BreakoutNoFrameskip-v4"
+max_episode_length = 1000000000
 _env_params = {
 	"env_name": env_name,
 	"max_episode_length": max_episode_length
 }
 
-# for i in range(action_n):
-# 	print(wrapped_env.env.action_space.sample())
-# avgtimes = 0
-# for times in range(0,20):
-depthList = [4]
-trajectory = [1000]
-initPositionList = [(2, 3, 1)]
+depthList = [100]
+trajectory = [100]
 numGames = 1
 outFilename = "multitestpro-out.txt"
 starttime = datetime.datetime.now()
@@ -171,49 +136,52 @@ sim = ToySimulator(_env_params)
 sim2 = ToySimulator(_env_params)
 avgsteps = 0
 avgstep_list = []
-initNums = len(initPositionList)
 initNums = 1
 initsize = 0
 ransize = 0
-initstate = ToyState(sim.getState())
+initstate = sim.getState()
 avg_cumulate_reward = 0
 # (self, _sim, _maxDepth, _numRuns, _ucbScalar, _gamma, _leafValue, _endEpisodeValue):
 for max_depth in depthList:
 	for num_Runs in trajectory:
 		print(max_depth, ",", num_Runs)
 		avgsteps = 0
-		uctTree = uct_EnvTest.UCTPlanner(sim2, max_depth, num_Runs, 1, 0.95, 0, 0, True)
-		# uctTree = uct.UCTPlanner(sim2, 30, 110, 1, 0.95, 0, 0)
+		uctTree = uct_EnvTest.UCTPlanner(sim2, max_depth, num_Runs, 1, 1, 0, 0, True)
 		print(numGames, initNums)
 		for j in range(0, initNums):
 			for i in range(0, int(numGames / initNums)):
-				# sim.setState(initstate, False)
+				sim.setState(initstate)
 				steps = 0
 				r = 0
 				# sim.getState().print()
-				#print(sim.isTerminal())
-				while not sim.isTerminal():
 
+				while not sim.isTerminal():
 					steps += 1
-					#TODO 内外层应该是两个，或者设置一下恢复功能
-					#TODO 还有set不成功的地方，，
 					uctTree.setRootNode(sim.getState(), sim.getActions(), r, sim.isTerminal())
+					origin_state = sim.wrapped_env.get_cloned_state()
+					origin_done = sim.isTerminal()
 					# print()
-					uctTree.plan()
+					sim.wrapped_env.render()
+					tree_size = uctTree.plan()
 					# print()
-					# return the action with the highest reward
 					action = uctTree.getAction()
-					sim.setState(uctTree.root_.state_)
+					sim.setState(ToyState(origin_state,origin_done))
+					# clonestate = sim.wrapped_env.get_cloned_state()
+					# print("cloned state equal? ", np.array_equal(simstate.state_[0],clonestate[0]),
+					# 	  simstate.done_, sim.current.done_)
 					print("-action:", end='')
 					action.print()
 					# print("->", end='')
+					print("")
 					# uctTree.testTreeStructure()
 					# 先序遍历，测试所有节点
 					# uctTree.testDeterministicProperty()
-					time.sleep(0.1)
 					r = sim.act(action)
 					sim.wrapped_env.render()
+					# print(sim.isTerminal())
 					avg_cumulate_reward += r
+					# simstate = sim.wrapped_env.get_cloned_state()
+					# print("after the act, statesame as before? ", np.array_equal(simstate[0], uctTree.root_.state_.state_[0]))
 					# sim.getState().print()
 					print(" reward:", uctTree.root_.reward_, end='')
 					print("")

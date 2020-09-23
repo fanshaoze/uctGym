@@ -1,5 +1,6 @@
 import gym
 from copy import deepcopy
+from Env.AtariEnv.atari_wrappers import FrameStack
 
 from Env.AtariEnv.AtariEnvWrapper import make_atari_env
 
@@ -12,9 +13,7 @@ class EnvWrapper():
         self.env_type = None
 
         try:
-            # self.env, self.recorder = make_atari_env(env_name, 0, 0, enable_record = enable_record,
-            #   			self.env = gym.make("Breakout-v4")                                       record_path = record_path)
-            self.env = gym.make("Breakout-v4")
+            self.env, self.recorder = make_atari_env(env_name, 0, 0, enable_record = False,record_path = record_path)
             # Call reset to avoid gym bugs.
             self.env.reset()
 
@@ -33,7 +32,7 @@ class EnvWrapper():
 
     def reset(self):
         state = self.env.reset()
-        print("state type:", type(state))
+        #print("state type:", type(state))
         self.current_step_count = 0
         self.since_last_reset = 0
 
@@ -43,24 +42,23 @@ class EnvWrapper():
         next_state, reward, done, _ = self.env.step(action)
 
         self.current_step_count += 1
-        if self.current_step_count >= self.max_episode_length:
-            done = True
 
         self.since_last_reset += 1
 
         return next_state, reward, done
 
     def checkpoint(self):
-        return deepcopy(self.env.clone_full_state()), self.current_step_count
+        return self.env.clone_full_state(), self.current_step_count
 
     def get_cloned_state(self):
-        return deepcopy(self.env.clone_full_state())
+        return self.env.clone_full_state()
 
     def checkpoint_with_state(self, state):
         return deepcopy(state), self.current_step_count
 
     def restore(self, checkpoint):
-        if self.since_last_reset > 20000:
+        if self.since_last_reset > 2000:
+            print("reset with last reset")
             self.reset()
             self.since_last_reset = 0
 
@@ -71,6 +69,7 @@ class EnvWrapper():
         return self.env.get_state()
 
     def restore_with_state(self, full_state):
+        #print("restore with state, state type is:", type(full_state))
         self.env.restore_full_state(full_state)
 
     def render(self):
