@@ -204,10 +204,12 @@ for max_depth in depthList:
 
 					sim.wrapped_env.render()
 					avg_cumulate_reward += r
+
 					''' Test 
 					simstate = sim.wrapped_env.get_cloned_state()
 					print("after the act, state different with before? ", np.array_equal(simstate[0], uctTree.root_.state_.state_[0]))
 					'''
+
 					# sim.getState().print()
 					print(" reward:", uctTree.root_.reward_, end='')
 					print("")
