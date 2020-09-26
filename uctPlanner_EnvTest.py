@@ -137,27 +137,27 @@ initNums = 1
 initsize = 0
 ransize = 0
 initstate = copy.deepcopy(sim.getState())
-
-sim.setState(initstate)
-state_init = sim.wrapped_env.get_cloned_state()
-actions = []
-for i in range(5):
-	actions.append(sim.wrapped_env.env.action_space.sample())
-for i in range(5):
-	sim.act(ToyAction(actions[i]))
-state0 = sim.wrapped_env.get_cloned_state()
-print(type(state0[0]),type(sim.current.state_[0]))
-print("sim state is equal to cloned state? ",np.array_equal(state0[0],sim.current.state_[0]))
-sim.setState(initstate)
-state_next_init = sim.wrapped_env.get_cloned_state()
-print(type(state_init[0]),type(state_next_init[0]))
-print("reset state successfully? ", np.array_equal(state_init[0], state_next_init[0]))
-for i in range(5):
-	sim.act(ToyAction(actions[i]))
-state1 = sim.wrapped_env.get_cloned_state()
-print(type(state0[0]))
-print("second act state equal? ", np.array_equal(state0[0], state1[0]))
-sys.exit()
+#
+# sim.setState(initstate)
+# state_init = sim.wrapped_env.get_cloned_state()
+# actions = []
+# for i in range(5):
+# 	actions.append(sim.wrapped_env.env.action_space.sample())
+# for i in range(5):
+# 	sim.act(ToyAction(actions[i]))
+# state0 = sim.wrapped_env.get_cloned_state()
+# print(type(state0[0]),type(sim.current.state_[0]))
+# print("sim state is equal to cloned state? ",np.array_equal(state0[0],sim.current.state_[0]))
+# sim.setState(initstate)
+# state_next_init = sim.wrapped_env.get_cloned_state()
+# print(type(state_init[0]),type(state_next_init[0]))
+# print("reset state successfully? ", np.array_equal(state_init[0], state_next_init[0]))
+# for i in range(5):
+# 	sim.act(ToyAction(actions[i]))
+# state1 = sim.wrapped_env.get_cloned_state()
+# print(type(state0[0]))
+# print("second act state equal? ", np.array_equal(state0[0], state1[0]))
+# sys.exit()
 
 avg_cumulate_reward = 0
 # (self, _sim, _maxDepth, _numRuns, _ucbScalar, _gamma, _leafValue, _endEpisodeValue):
@@ -165,7 +165,7 @@ for max_depth in depthList:
 	for num_Runs in trajectory:
 		print(max_depth, ",", num_Runs)
 		avgsteps = 0
-		uctTree = uct_EnvTest.UCTPlanner(sim2, max_depth, num_Runs, 1, 1, 0, 0, True)
+		uctTree = uct_EnvTest.UCTPlanner(sim, max_depth, num_Runs, 1, 1, 0, 0, True)
 		print(numGames, initNums)
 		for j in range(0, initNums):
 			for i in range(0, int(numGames / initNums)):
@@ -212,7 +212,8 @@ for max_depth in depthList:
 
 					# sim.getState().print()
 					print(" reward:", uctTree.root_.reward_, end='')
-					print("")
+					print()
+					print("cumulate_reward: ", avg_cumulate_reward)
 					# sim.getState().print()
 				print("#####################Game:", i, "  steps: ", steps, "  average cumulate reward: ",
 					  avg_cumulate_reward)

@@ -59,7 +59,7 @@ class EnvWrapper():
 
     def restore(self, checkpoint):
         if self.since_last_reset > 2000:
-            print("reset with last reset")
+            print("reset ", end='')
             self.reset()
             self.since_last_reset = 0
 
@@ -70,6 +70,10 @@ class EnvWrapper():
         return self.env.get_state()
 
     def restore_with_state(self, full_state):
+        if self.since_last_reset > 2000:
+            print("reset-R ", end='')
+            self.reset()
+            self.since_last_reset = 0
         #print("restore with state, state type is:", type(full_state))
         self.env.restore_full_state(full_state)
 
